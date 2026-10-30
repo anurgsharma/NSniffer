@@ -1,0 +1,131 @@
+{
+  "_note": "ILLUSTRATIVE rule tables for automation and estimates. Rates are simplified (national level only, annualised). Every value must be validated by in-country payroll/legal partners before production use.",
+  "US": {
+    "name": "United States", "currency": "USD", "min_wage_annual": 15080,
+    "tax_free_allowance": 14600,
+    "income_tax_brackets": [[0, 0.10], [11600, 0.12], [47150, 0.22], [100525, 0.24], [191950, 0.32], [243725, 0.35], [609350, 0.37]],
+    "employee_contributions": [
+      {"name": "Social Security", "rate": 0.062, "cap": 168600},
+      {"name": "Medicare", "rate": 0.0145}
+    ],
+    "employer_contributions": [
+      {"name": "Social Security (ER)", "rate": 0.062, "cap": 168600},
+      {"name": "Medicare (ER)", "rate": 0.0145},
+      {"name": "FUTA", "rate": 0.006, "cap": 7000},
+      {"name": "SUTA", "rate": 0.027, "cap": 7000}
+    ],
+    "statutory_bonus_months": 0, "notice_days": 0, "probation_days": 90, "annual_leave_days": 0,
+    "aor_allowed": true, "strict_classification": false,
+    "benefits": ["health_insurance", "401k"], "right_to_work": "I-9 / E-Verify",
+    "contract_clauses": ["Employment is at-will to the extent permitted by state law.", "Worker must complete Form I-9 within 3 business days of start."]
+  },
+  "GB": {
+    "name": "United Kingdom", "currency": "GBP", "min_wage_annual": 22308,
+    "tax_free_allowance": 12570,
+    "income_tax_brackets": [[0, 0.20], [37700, 0.40], [112570, 0.45]],
+    "employee_contributions": [
+      {"name": "NI (employee)", "rate": 0.08, "floor": 12570, "cap": 50270},
+      {"name": "NI (employee, upper)", "rate": 0.02, "floor": 50270}
+    ],
+    "employer_contributions": [
+      {"name": "NI (employer)", "rate": 0.138, "floor": 9100},
+      {"name": "Pension auto-enrolment", "rate": 0.03}
+    ],
+    "statutory_bonus_months": 0, "notice_days": 7, "probation_days": 90, "annual_leave_days": 28,
+    "aor_allowed": true, "strict_classification": true,
+    "benefits": ["workplace_pension"], "right_to_work": "Home Office right-to-work check",
+    "contract_clauses": ["Written statement of particulars provided on or before day one.", "Off-payroll (IR35) status determined for any contractor engagement."]
+  },
+  "CA": {
+    "name": "Canada", "currency": "CAD", "min_wage_annual": 35984,
+    "tax_free_allowance": 15705,
+    "income_tax_brackets": [[0, 0.15], [55867, 0.205], [111733, 0.26], [173205, 0.29], [246752, 0.33]],
+    "employee_contributions": [
+      {"name": "CPP", "rate": 0.0595, "floor": 3500, "cap": 68500},
+      {"name": "EI", "rate": 0.0166, "cap": 63200}
+    ],
+    "employer_contributions": [
+      {"name": "CPP (ER)", "rate": 0.0595, "floor": 3500, "cap": 68500},
+      {"name": "EI (ER)", "rate": 0.02324, "cap": 63200}
+    ],
+    "statutory_bonus_months": 0, "notice_days": 14, "probation_days": 90, "annual_leave_days": 10,
+    "aor_allowed": true, "strict_classification": false,
+    "benefits": ["extended_health"], "right_to_work": "SIN / work permit verification",
+    "contract_clauses": ["Vacation pay of at least 4% of wages.", "Termination entitlements no less than provincial employment standards."]
+  },
+  "IN": {
+    "name": "India", "currency": "INR", "min_wage_annual": 55536,
+    "tax_free_allowance": 75000,
+    "income_tax_brackets": [[0, 0.0], [300000, 0.05], [700000, 0.10], [1000000, 0.15], [1200000, 0.20], [1500000, 0.30]],
+    "employee_contributions": [
+      {"name": "Provident Fund", "rate": 0.12, "cap": 180000}
+    ],
+    "employer_contributions": [
+      {"name": "Provident Fund (ER)", "rate": 0.12, "cap": 180000},
+      {"name": "Gratuity accrual", "rate": 0.0481}
+    ],
+    "statutory_bonus_months": 0, "notice_days": 30, "probation_days": 180, "annual_leave_days": 15,
+    "aor_allowed": true, "strict_classification": false,
+    "benefits": ["group_health_insurance"], "right_to_work": "PAN / Aadhaar verification",
+    "contract_clauses": ["Employee enrolled in EPF and ESI where applicable.", "Gratuity payable after five years of continuous service."]
+  },
+  "DE": {
+    "name": "Germany", "currency": "EUR", "min_wage_annual": 25813,
+    "tax_free_allowance": 11604,
+    "income_tax_brackets": [[0, 0.14], [5720, 0.24], [55080, 0.42], [265722, 0.45]],
+    "employee_contributions": [
+      {"name": "Pension insurance", "rate": 0.093, "cap": 90600},
+      {"name": "Unemployment insurance", "rate": 0.013, "cap": 90600},
+      {"name": "Health insurance", "rate": 0.0815, "cap": 62100},
+      {"name": "Long-term care", "rate": 0.017, "cap": 62100}
+    ],
+    "employer_contributions": [
+      {"name": "Pension insurance (ER)", "rate": 0.093, "cap": 90600},
+      {"name": "Unemployment insurance (ER)", "rate": 0.013, "cap": 90600},
+      {"name": "Health insurance (ER)", "rate": 0.0815, "cap": 62100},
+      {"name": "Long-term care (ER)", "rate": 0.017, "cap": 62100},
+      {"name": "Accident insurance", "rate": 0.01}
+    ],
+    "statutory_bonus_months": 0, "notice_days": 28, "probation_days": 180, "annual_leave_days": 20,
+    "aor_allowed": true, "strict_classification": true,
+    "benefits": ["statutory_health_insurance"], "right_to_work": "EU residence / work permit check",
+    "contract_clauses": ["Contract governed by the Nachweisgesetz written-terms requirements.", "Statutory minimum of 20 days paid leave on a five-day week."]
+  },
+  "PH": {
+    "name": "Philippines", "currency": "PHP", "min_wage_annual": 168345,
+    "tax_free_allowance": 0,
+    "income_tax_brackets": [[0, 0.0], [250000, 0.15], [400000, 0.20], [800000, 0.25], [2000000, 0.30], [8000000, 0.35]],
+    "employee_contributions": [
+      {"name": "SSS", "rate": 0.045, "cap": 360000},
+      {"name": "PhilHealth", "rate": 0.025, "cap": 1200000},
+      {"name": "Pag-IBIG", "rate": 0.02, "cap": 120000}
+    ],
+    "employer_contributions": [
+      {"name": "SSS (ER)", "rate": 0.095, "cap": 360000},
+      {"name": "PhilHealth (ER)", "rate": 0.025, "cap": 1200000},
+      {"name": "Pag-IBIG (ER)", "rate": 0.02, "cap": 120000}
+    ],
+    "statutory_bonus_months": 1, "notice_days": 30, "probation_days": 180, "annual_leave_days": 5,
+    "aor_allowed": true, "strict_classification": false,
+    "benefits": ["hmo"], "right_to_work": "TIN / NBI clearance",
+    "contract_clauses": ["13th-month pay of at least 1/12 of annual basic salary.", "Five days service incentive leave after one year of service."]
+  },
+  "MX": {
+    "name": "Mexico", "currency": "MXN", "min_wage_annual": 90859,
+    "tax_free_allowance": 0,
+    "income_tax_brackets": [[0, 0.0192], [8952, 0.064], [75984, 0.1088], [133536, 0.16], [155229, 0.1792], [185852, 0.2136], [374837, 0.2352], [590796, 0.30], [1127926, 0.32], [1503902, 0.34], [4511707, 0.35]],
+    "employee_contributions": [
+      {"name": "IMSS (employee)", "rate": 0.024}
+    ],
+    "employer_contributions": [
+      {"name": "IMSS (employer)", "rate": 0.20},
+      {"name": "INFONAVIT", "rate": 0.05},
+      {"name": "SAR retirement", "rate": 0.02},
+      {"name": "State payroll tax", "rate": 0.03}
+    ],
+    "statutory_bonus_months": 0.5, "notice_days": 0, "probation_days": 30, "annual_leave_days": 12,
+    "aor_allowed": true, "strict_classification": true,
+    "benefits": ["imss_health"], "right_to_work": "CURP / RFC verification",
+    "contract_clauses": ["Aguinaldo of at least 15 days salary paid before 20 December.", "Profit sharing (PTU) per Federal Labor Law."]
+  }
+}
