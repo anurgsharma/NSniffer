@@ -131,6 +131,9 @@ class Automator:
             errs.append("rate_hourly or salary_annual is required for contractors")
         if "@" not in (w.get("email") or ""):
             errs.append("A valid email is required")
+        if r.get("engine") == "au":
+            from . import au_payroll
+            errs += au_payroll.platform_validate(w)
         return errs
 
     def worker_step(self, w, today):
@@ -231,14 +234,16 @@ class Automator:
 
         if s == "offboarding":
             if "settlement" not in w["data"]:
-                items = rules.settlement(w, r, w["data"].get("notice_given_days", 0), w["data"].get("initiated_by"))
-                self.store.update("workers", w["id"], data={"settlement": [[l, str(a)] for l, a in items]})
+                items = rules.settlement(w, r, w["data"].get("notice_given_days", 0), w["data"].get("initiated_by"),
+                                         w["data"].get("cessation_type"))
+                items = [[str(v) for v in item] for item in items]
+                self.store.update("workers", w["id"], data={"settlement": items})
                 self.ad.notify.send(client["contact_email"], f"Offboarding scheduled: {w['full_name']}",
                                     f"Last day {w['end_date']}. Revoke system access and collect equipment.")
                 self.ad.notify.send(w["email"], "Your offboarding details",
                                     f"Last day {w['end_date']}. Final pay includes: "
-                                    + (", ".join(l for l, _ in items) or "regular pay"))
-                self.store.audit("workers", w["id"], "settlement_computed", items=[[l, str(a)] for l, a in items])
+                                    + (", ".join(i[0] for i in items) or "regular pay"))
+                self.store.audit("workers", w["id"], "settlement_computed", items=items)
                 return True
             if today > rules.parse_date(w["end_date"]):
                 return self.move("workers", w, "terminated", "Last day passed")
@@ -268,6 +273,18 @@ class Automator:
                 out.append(w)
         return out
 
+    def year_to_date(self, worker, period):
+        """Australian FY (July-June) accumulators from earlier payslips: QE for the super cap, WHM gross."""
+        y, m = map(int, period.split("-"))
+        fy_start = f"{y if m >= 7 else y - 1}-07"
+        ytd = {"qe_ytd": Decimal(0), "whm_ytd": Decimal(0)}
+        for sl in self.store.find("payslips", worker_id=worker["id"]):
+            meta = sl["data"].get("meta") or {}
+            if fy_start <= self.store.get("pay_runs", sl["pay_run_id"])["period"] < period:
+                ytd["qe_ytd"] += D(meta.get("qe", 0))
+                ytd["whm_ytd"] += D(meta.get("whm_gross", 0))
+        return ytd
+
     def schedule_payruns(self, today):
         if today.day < self.cfg.payroll_cutoff_day:
             return 0
@@ -294,8 +311,8 @@ class Automator:
                                          status="approved", pay_run_id=None)
                 extras = []
                 if w.get("end_date") and start <= rules.parse_date(w["end_date"]) <= end:
-                    extras = [(l, D(a)) for l, a in w["data"].get("settlement", [])]
-                slip = rules.calc_payslip(w, r, run["period"], sheets, extras)
+                    extras = w["data"].get("settlement", [])
+                slip = rules.calc_payslip(w, r, run["period"], sheets, extras, self.year_to_date(w, run["period"]))
                 cost_billing = money(fx.convert(slip["total_cost"], slip["currency"], client["billing_currency"]))
                 fee = (money(fx.convert(client["eor_fee_monthly"], "USD", client["billing_currency"]))
                        if w["engagement_type"] == "EOR" else money(cost_billing * D(client["aor_fee_pct"])))
@@ -306,7 +323,8 @@ class Automator:
                                   data={"lines": [{**l, "amount": str(l["amount"])} for l in slip["lines"]],
                                         "days": slip["days"], "engagement_type": w["engagement_type"],
                                         "worker_name": w["full_name"],
-                                        "billing_cost": str(cost_billing), "billing_fee": str(fee)})
+                                        "billing_cost": str(cost_billing), "billing_fee": str(fee),
+                                        **({"meta": slip["meta"]} if slip.get("meta") else {})})
                 for t in sheets:
                     self.store.update("timesheets", t["id"], pay_run_id=run["id"])
             return self.move("pay_runs", run, "calculated", "Payslips calculated",

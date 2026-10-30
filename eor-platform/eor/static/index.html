@@ -35,6 +35,7 @@ input,select{padding:6px 8px;border:1px solid var(--line);border-radius:6px;back
 <div id="toast"></div>
 <script>
 const VIEWS = ["Overview","Clients","Workers","Approvals","Payroll","Invoices","Quote","Activity"];
+const AU_TYPES = [["W01","Permanent full-time"],["W02","Permanent part-time"],["W04","Fixed-term"],["W05","Apprentice / trainee"],["W06","Junior (under 18)"],["W07","Working holiday maker"],["W08","Foreign resident"],["W09","Secondee with CoC"],["W10","Director"],["W11","Labour-hire contractor (TFN)"],["W12","ABN contractor, voluntary agreement"],["W13","ABN contractor, no withholding"]];
 const WORKER_FLOW = ["requested","needs_attention","classification","contracting","contract_sent","screening","provisioning","ready","active","offboarding","terminated","withdrawn","rejected"];
 let current = "Overview";
 const key = new URLSearchParams(location.search).get("key") || "";
@@ -87,7 +88,12 @@ const R = {
       <label>Type<select name="engagement_type"><option>EOR</option><option>AOR</option></select></label>
       <label>Job title<input name="job_title"></label><label>Annual salary (local)<input name="salary_annual"></label>
       <label>Hourly rate (contractors)<input name="rate_hourly"></label><label>Start date<input name="start_date" type="date" required></label>
-      <label>End date (fixed term)<input name="end_date" type="date"></label><button class="btn primary">Create</button></form></div>
+      <label>End date (fixed term)<input name="end_date" type="date"></label>
+      <label>AU state of work<select name="au.state"><option value="">(not Australia)</option>${["NSW","VIC","QLD","WA","SA","TAS","ACT","NT"].map(s=>`<option>${s}</option>`).join("")}</select></label>
+      <label>AU worker type<select name="au.worker_type"><option value="">Default (W01 employee / W13 ABN contractor)</option>${AU_TYPES.map(([k,v])=>`<option value="${k}">${k} ${v}</option>`).join("")}</select></label>
+      <label>AU TFN<input name="au.tfn" placeholder="9 digits"></label><label>AU ABN (contractors)<input name="au.abn" placeholder="11 digits"></label>
+      <label>AU tax-free threshold<select name="au.tft"><option value="true">Claimed</option><option value="false">Not claimed</option></select></label>
+      <button class="btn primary">Create</button></form><p class="mute">Australian fields are used only when Country is Australia. Payroll follows GPE-AU-LOGIC v1.3 (FY2026-27).</p></div>
       <div class="card"><h2>Workers</h2>${table(rows,[["Name",r=>esc(r.full_name)],["Country",r=>r.country],["Type",r=>r.engagement_type],["Status",r=>pill(r.status)],
         ["Pay",r=>r.salary_annual?`${r.currency} ${r.salary_annual}/yr`:`${r.currency} ${r.rate_hourly}/h`],["Start",r=>r.start_date],
         ["Notes",r=>esc((r.data.errors||[]).join("; ") || (r.data.classification ? `risk ${r.data.classification.level} (${r.data.classification.score})` : ""))],
@@ -115,7 +121,8 @@ const R = {
     return `<div class="card"><h2>Employer cost calculator</h2><form onsubmit="return quote(event)">
       <label>Country<select name="country">${Object.entries(countries).map(([k,v])=>`<option value="${k}">${esc(v.name)} (${v.currency})</option>`).join("")}</select></label>
       <label>Annual salary (local)<input name="salary_annual" value="60000" required></label>
-      <label>Type<select name="engagement_type"><option>EOR</option><option>AOR</option></select></label><button class="btn primary">Estimate</button></form><div id="quote"></div>
+      <label>Type<select name="engagement_type"><option>EOR</option><option>AOR</option></select></label>
+      <label>State (Australia)<select name="state">${["NSW","VIC","QLD","WA","SA","TAS","ACT","NT"].map(s=>`<option>${s}</option>`).join("")}</select></label><button class="btn primary">Estimate</button></form><div id="quote"></div>
       <p class="mute">Illustrative statutory rates. Validate with in-country partners before quoting customers.</p></div>`;
   },
   async Activity(){
@@ -128,7 +135,13 @@ const R = {
 async function render(){ try { $("#view").innerHTML = await R[current](); } catch(e){ $("#view").innerHTML = `<div class="card bad">${esc(e.message)}</div>`; } }
 async function submitForm(ev, path){
   ev.preventDefault();
-  const body = Object.fromEntries([...new FormData(ev.target)].filter(([k,v])=>v!==""));
+  const body = {};
+  for (const [k,v] of new FormData(ev.target)) {
+    if (v === "") continue;
+    if (k.startsWith("au.")) (body.au ??= {})[k.slice(3)] = v === "true" ? true : v === "false" ? false : v;
+    else body[k] = v;
+  }
+  if (body.au && (body.country !== "AU" || !body.au.state)) delete body.au;
   try { await api(path, body); toast("Saved. Automation picks it up on the next pass."); render(); } catch(e){ toast(e.message); }
   return false;
 }

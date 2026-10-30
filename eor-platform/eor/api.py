@@ -31,7 +31,7 @@ def routes(p):
         ("GET", r"/api/dashboard", lambda m, q, b: p.dashboard()),
         ("GET", r"/api/countries", lambda m, q, b: rules.countries()),
         ("POST", r"/api/quote", lambda m, q, b: rules.quote(b["country"], b.get("engagement_type", "EOR").upper(),
-                                                           b["salary_annual"])),
+                                                           b["salary_annual"], b.get("state"))),
         ("GET", r"/api/clients", lambda m, q, b: s.find("clients", limit=lim(q), **filt(q, "status"))),
         ("POST", r"/api/clients", lambda m, q, b: p.create_client(b)),
         ("GET", r"/api/clients/(\w+)", lambda m, q, b: p._get("clients", m[1])),

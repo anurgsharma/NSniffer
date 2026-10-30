@@ -114,7 +114,7 @@ class MockPayments(PaymentsProvider):
 
 class MockFX(FXProvider):
     TO_USD = {"USD": "1", "GBP": "1.27", "CAD": "0.73", "INR": "0.012", "EUR": "1.08",
-              "PHP": "0.0175", "MXN": "0.055"}
+              "PHP": "0.0175", "MXN": "0.055", "AUD": "0.66"}
 
     def convert(self, amount, src, dst):
         return Decimal(str(amount)) * Decimal(self.TO_USD[src]) / Decimal(self.TO_USD[dst])

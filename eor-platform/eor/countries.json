@@ -127,5 +127,14 @@
     "aor_allowed": true, "strict_classification": true,
     "benefits": ["imss_health"], "right_to_work": "CURP / RFC verification",
     "contract_clauses": ["Aguinaldo of at least 15 days salary paid before 20 December.", "Profit sharing (PTU) per Federal Labor Law."]
+  },
+  "AU": {
+    "name": "Australia", "currency": "AUD", "engine": "au", "quote_period": "2026-08", "min_wage_annual": 52245,
+    "_engine_note": "AU payroll is computed by au_payroll.py from au_rules.json (GPE-AU-LOGIC v1.3). The generic tax fields below are unused.",
+    "tax_free_allowance": 0, "income_tax_brackets": [[0, 0]], "employee_contributions": [], "employer_contributions": [],
+    "statutory_bonus_months": 0, "notice_days": 7, "probation_days": 180, "annual_leave_days": 20,
+    "aor_allowed": true, "strict_classification": true,
+    "benefits": ["superannuation (12% SG, Payday Super)"], "right_to_work": "VEVO visa check or citizenship evidence",
+    "contract_clauses": ["National Employment Standards apply; award or enterprise agreement minimums prevail where higher.", "Super guarantee of 12% of qualifying earnings paid within 7 business days of each payday.", "Fair Work Information Statement provided before start."]
   }
 }

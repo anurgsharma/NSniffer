@@ -64,7 +64,9 @@ flowchart LR
 eor/
   engine.py      Automator: state machines for clients, workers, timesheets, pay runs; approval gates
   rules.py       Gross-to-net, classification scoring, settlements, quotes (pure functions)
-  countries.json Country rule tables (US, GB, CA, IN, DE, PH, MX)
+  countries.json Country rule tables (US, GB, CA, IN, DE, PH, MX, AU)
+  au_payroll.py  Australian payroll engine per GPE-AU-LOGIC v1.3 (see docs/AU_PAYROLL.md)
+  au_rules.json  Australian parameter tables (PAYG, STSL, super, payroll tax by state, leave, termination)
   adapters.py    Integration interfaces + mock providers (KYC, e-sign, background, payroll, payments, FX, notify)
   documents.py   Contract generation
   service.py     Use cases shared by API and CLI (create, update, offboard, timesheets, approvals, webhooks)
@@ -128,9 +130,17 @@ with `/?key=...`).
 | `EOR_TIMESHEET_AUTO_APPROVE_HOURS` / `EOR_EXPENSE_AUTO_APPROVE` | `200` / `1000` | Timesheet auto-approval limits |
 | `EOR_ADAPTER_<NAME>` | `mock` | Provider for `kyc`, `esign`, `background`, `payroll`, `payments`, `fx` |
 
+## Australia
+
+Australia has its own engine, built from Lancesoft's FY2026-27 payroll specification. It covers the full
+PAYG scale-selection table, Schedule 1/8 coefficients, Medicare adjustments, STSL, WHM and flat rates, Payday
+Super with the annual contribution cap, payroll tax in all 8 states, workers' comp, leave and LSL provisions,
+Schedule 5 bonuses and Schedule 7/11 terminations. All 16 workbook test cases and the bonus and termination
+scenarios pass as unit tests. See [docs/AU_PAYROLL.md](docs/AU_PAYROLL.md) for coverage and open items.
+
 ## Before production
 
-- **Statutory data.** `countries.json` is a simplified national-level model (annualised brackets, no
+- **Statutory data.** For every country except Australia, `countries.json` is a simplified national-level model (annualised brackets, no
   state/provincial tax, no allowances or credits). Each country needs sign-off from in-country payroll
   or legal partners, and the real payroll provider should be the system of record for withholding.
 - **Real adapters.** Every provider is a mock today.

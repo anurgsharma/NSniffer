@@ -68,7 +68,8 @@ class Platform:
             rate_hourly=str(body["rate_hourly"]) if body.get("rate_hourly") else None,
             currency=r["currency"] if r else None, status="requested",
             data={"classification_answers": body.get("classification_answers") or {},
-                  "leave_taken_days": body.get("leave_taken_days", 0)})
+                  "leave_taken_days": body.get("leave_taken_days", 0),
+                  **({"au": body["au"]} if body.get("au") else {})})
         self.store.audit("workers", w["id"], "created")
         return w
 
@@ -77,7 +78,7 @@ class Platform:
         allowed = {"full_name", "email", "job_title", "salary_annual", "rate_hourly", "start_date", "end_date",
                    "country", "engagement_type"}
         fields = {k: (str(v) if v is not None else None) for k, v in body.items() if k in allowed}
-        data = {k: body[k] for k in ("classification_answers", "leave_taken_days") if k in body}
+        data = {k: body[k] for k in ("classification_answers", "leave_taken_days", "au") if k in body}
         if w["status"] == "needs_attention":
             fields["status"] = "requested"
             if "classification" in w["data"]:
@@ -96,11 +97,17 @@ class Platform:
             self.store.audit("workers", worker_id, "status_changed", **{"from": w["status"], "to": "withdrawn"})
             return self.store.get("workers", worker_id)
         r = rules.country(w["country"])
-        end = _date(body["end_date"], "end_date") if body.get("end_date") else today + timedelta(days=r["notice_days"])
+        notice = r["notice_days"]
+        if r.get("engine") == "au":
+            from . import au_payroll
+            years = (today - rules.parse_date(w["start_date"])).days // 365
+            notice = 7 * au_payroll.notice_weeks(years, None)
+        end = _date(body["end_date"], "end_date") if body.get("end_date") else today + timedelta(days=notice)
         if end < rules.parse_date(w["start_date"]):
             end = rules.parse_date(w["start_date"])
         self.store.update("workers", worker_id, status="offboarding", end_date=end.isoformat(),
                           data={"initiated_by": body.get("initiated_by", "employer"),
+                                "cessation_type": body.get("cessation_type"),
                                 "offboard_reason": body.get("reason"),
                                 "notice_given_days": max((end - today).days, 0)})
         self.store.audit("workers", worker_id, "status_changed",

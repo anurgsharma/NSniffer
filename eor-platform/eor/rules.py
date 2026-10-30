@@ -76,8 +76,14 @@ def employed_days(worker, start, end):
     return max((e - s).days + 1, 0)
 
 
-def calc_payslip(worker, rules, period, timesheets=(), extra_earnings=()):
-    """Gross-to-net for one worker and one monthly period. Returns Decimal amounts."""
+def calc_payslip(worker, rules, period, timesheets=(), extra_earnings=(), context=None):
+    """Gross-to-net for one worker and one monthly period. Returns Decimal amounts.
+
+    Countries with a dedicated engine (rules["engine"]) are delegated to it; `context`
+    carries year-to-date figures such engines need (e.g. AU super cap, WHM bands)."""
+    if rules.get("engine") == "au":
+        from . import au_payroll
+        return au_payroll.platform_payslip(worker, period, timesheets, extra_earnings, context)
     start, end = period_bounds(period)
     days = employed_days(worker, start, end)
     frac = D(days) / D((end - start).days + 1)
@@ -93,8 +99,8 @@ def calc_payslip(worker, rules, period, timesheets=(), extra_earnings=()):
 
     if worker["engagement_type"] == "EOR":
         line("earning", "Base salary", D(worker["salary_annual"]) / 12 * frac)
-        for label, amount in extra_earnings:
-            line("earning", label, amount)
+        for item in extra_earnings:
+            line("earning", item[0], D(item[1]))
         gross = sum((l["amount"] for l in lines), Decimal(0))
         income_tax, employee, employer = withholding(rules, gross)
         line("deduction", "Income tax", income_tax)
@@ -120,13 +126,17 @@ def calc_payslip(worker, rules, period, timesheets=(), extra_earnings=()):
     }
 
 
-def quote(country_code, engagement_type, salary_annual):
+def quote(country_code, engagement_type, salary_annual, state=None):
     rules = country(country_code)
     if not rules:
         raise ValueError(f"unsupported country {country_code}")
-    worker = {"engagement_type": engagement_type, "salary_annual": salary_annual,
-              "start_date": "2000-01-01", "end_date": None}
-    slip = calc_payslip(worker, rules, "2025-01")
+    # AU estimate assumes a resident who has quoted a TFN and claims the tax-free threshold
+    profile = {"state": state.upper() if state else "NSW", "tfn": "123456782"}
+    if engagement_type == "AOR" and rules.get("engine") == "au":
+        profile.update(worker_type="W13", abn="51824753556")
+    worker = {"engagement_type": engagement_type, "salary_annual": salary_annual, "rate_hourly": None,
+              "start_date": "2000-01-01", "end_date": None, "data": {"au": profile}}
+    slip = calc_payslip(worker, rules, rules.get("quote_period", "2025-01"))
     return {"country": country_code.upper(), "currency": rules["currency"], "engagement_type": engagement_type,
             "monthly_gross": slip["gross"], "monthly_net": slip["net"],
             "monthly_employer_cost": slip["employer_cost"], "monthly_total_cost": slip["total_cost"],
@@ -173,8 +183,12 @@ def classify(answers, rules):
 
 # ---------------------------------------------------------------- offboarding
 
-def settlement(worker, rules, notice_given_days, initiated_by):
-    """Final-pay extras for an EOR employee: unused leave payout and pay in lieu of notice."""
+def settlement(worker, rules, notice_given_days, initiated_by, cessation=None):
+    """Final-pay extras for an EOR employee: unused leave payout and pay in lieu of notice.
+    Items are [label, amount, ...]; engines may append a pay code and its own withholding."""
+    if rules.get("engine") == "au":
+        from . import au_payroll
+        return au_payroll.platform_settlement(worker, notice_given_days, initiated_by, cessation)
     if worker["engagement_type"] != "EOR":
         return []
     salary = D(worker["salary_annual"])
