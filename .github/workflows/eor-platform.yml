@@ -1,0 +1,19 @@
+name: eor-platform
+on:
+  push:
+    paths: ["eor-platform/**", ".github/workflows/eor-platform.yml"]
+  pull_request:
+    paths: ["eor-platform/**", ".github/workflows/eor-platform.yml"]
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: eor-platform
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python -m unittest discover -s tests -t . -v
+      - run: python -m eor demo

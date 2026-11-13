@@ -1,0 +1,127 @@
+{
+  "_source": "Lancesoft Global Payroll Engine, GPE-AU-LOGIC v1.3 (Payroll_Logic_Australia_FY2026-27.xlsx), tabs 01-08. Keys keep the workbook's rule IDs.",
+  "effective_from": "2026-07-01",
+  "effective_to": "2027-06-30",
+  "currency": "AUD",
+
+  "country": {
+    "AU-CP-013": {"nmw_hourly": "26.44", "nmw_weekly": "1004.90"},
+    "AU-CP-014": {"casual_loading": "0.25"},
+    "AU-CP-016": {"high_income_threshold": "190100"},
+    "AU-CP-024": {"labour_hire_licence_states": ["QLD", "VIC", "SA", "ACT"]},
+    "standard_hours_week": "38"
+  },
+
+  "employer_settings": {
+    "_note": "Tab 01-B / 06-A Lancesoft inputs. Yellow cells in the workbook: confirm before go-live.",
+    "AU-ES-004": {"whm_registered": true},
+    "AU-ES-005": {"group_wages_annual": "12000000"},
+    "state_wages_annual": {"NSW": "6000000", "VIC": "4000000", "QLD": "2000000", "WA": "0", "SA": "0", "TAS": "0", "ACT": "0", "NT": "0"},
+    "vic_regional": false,
+    "qld_regional": false,
+    "labour_hire_licences": {"QLD": null, "VIC": null, "SA": null, "ACT": null}
+  },
+
+  "worker_types": {
+    "_flags": "02-A columns U-Z: EMP, SG, PT, WC, AL, LSL. Y applies, N does not, C conditional (resolved per worker).",
+    "W01": {"name": "Permanent full-time employee", "flags": "YYYYYY", "basis": "F", "income_type": "SAW"},
+    "W02": {"name": "Permanent part-time employee", "flags": "YYYYYY", "basis": "P", "income_type": "SAW"},
+    "W03": {"name": "Casual employee", "flags": "YYYYNY", "basis": "C", "income_type": "SAW"},
+    "W04": {"name": "Fixed-term / maximum-term employee", "flags": "YYYYYY", "basis": "F", "income_type": "SAW"},
+    "W05": {"name": "Apprentice / trainee", "flags": "YYCYYY", "basis": "F", "income_type": "SAW"},
+    "W06": {"name": "Junior employee (under 18)", "flags": "YCYYCY", "basis": "F", "income_type": "SAW"},
+    "W07": {"name": "Working holiday maker (417/462)", "flags": "YYYYCY", "basis": "F", "income_type": "WHM"},
+    "W08": {"name": "Foreign-resident employee", "flags": "YYYYCY", "basis": "F", "income_type": "SAW"},
+    "W09": {"name": "Inbound secondee with Certificate of Coverage", "flags": "YNYYYY", "basis": "F", "income_type": "SAW"},
+    "W10": {"name": "Company director", "flags": "NYYCNN", "basis": "F", "income_type": "SAW"},
+    "W11": {"name": "Labour-hire contractor - individual (s12-60)", "flags": "NCYCNN", "basis": "L", "income_type": "LAB"},
+    "W12": {"name": "Contractor with ABN - voluntary agreement", "flags": "NCYCNN", "basis": "V", "income_type": "VOL"},
+    "W13": {"name": "Contractor with ABN - no withholding", "flags": "NCCCNN", "basis": "N", "income_type": null},
+    "W14": {"name": "Supplier without ABN", "flags": "NCCCNN", "basis": null, "income_type": null},
+    "conditional_defaults": {
+      "_note": "Value used for a C flag when the worker record does not say. Matches tab 10 test cases.",
+      "SG": {"W06": true, "W11": true, "W12": false, "W13": false, "W14": false},
+      "PT": {"W05": false, "W13": true, "W14": false},
+      "WC": {"W10": false, "W11": false, "W12": false, "W13": false, "W14": false},
+      "AL": {"W06": true, "W07": true, "W08": true}
+    }
+  },
+
+  "payg": {
+    "_bands": "04-A: [x_from, x_to, a, b]; y = a*x - b on weekly-equivalent x",
+    "S1": [[0, 188, "0.15", "0.15"], [188, 371, "0.2084", "11.0185"], [371, 515, "0.179", "0.1066"], [515, 932, "0.3227", "74.1674"], [932, 2246, "0.32", "71.6508"], [2246, 3303, "0.39", "228.8816"], [3303, null, "0.47", "493.1893"]],
+    "S2": [[0, 362, "0", "0"], [362, 538, "0.15", "54.3462"], [538, 673, "0.25", "108.2135"], [673, 721, "0.17", "54.3473"], [721, 865, "0.179", "60.8377"], [865, 1282, "0.3227", "185.1935"], [1282, 2596, "0.32", "181.7319"], [2596, 3653, "0.39", "363.4627"], [3653, null, "0.47", "655.7704"]],
+    "S3": [[0, 2596, "0.3", "0.3"], [2596, 3653, "0.37", "181.7308"], [3653, null, "0.45", "474.0385"]],
+    "S5": [[0, 362, "0", "0"], [362, 721, "0.15", "54.3462"], [721, 865, "0.159", "60.8365"], [865, 1282, "0.3027", "185.1923"], [1282, 2596, "0.3", "181.7308"], [2596, 3653, "0.37", "363.4615"], [3653, null, "0.45", "655.7692"]],
+    "S6": [[0, 362, "0", "0"], [362, 721, "0.15", "54.3462"], [721, 865, "0.159", "60.8365"], [865, 908, "0.3027", "185.1923"], [908, 1135, "0.3527", "230.6135"], [1135, 1282, "0.3127", "185.1923"], [1282, 2596, "0.31", "181.7308"], [2596, 3653, "0.38", "363.4615"], [3653, null, "0.46", "655.7692"]],
+    "STSL_TF": [[0, 1337, "0", "0"], [1337, 2494, "0.15", "200.5615"], [2494, 3577, "0.17", "250.4527"], [3577, null, "0.1", "0"]],
+    "STSL_NT": [[0, 987, "0", "0"], [987, 2144, "0.15", "148.0615"], [2144, 2727, "0.17", "190.9527"], [2727, null, "0.1", "0"]]
+  },
+
+  "frequencies": {
+    "_note": "04-B AU-PAYG-CONV-*",
+    "W": {"periods": 52, "offset_factor": "0.019"},
+    "F": {"periods": 26, "offset_factor": "0.038"},
+    "M": {"periods": 12, "offset_factor": "0.083"},
+    "Q": {"periods": 4, "offset_factor": "0.25"}
+  },
+
+  "medicare_adjustment": {
+    "_note": "04-C, Scales 2 and 6 only",
+    "S2": {"west": "538", "shade_in": "673", "factor": "538.67", "family": "47238", "child": "4338", "mult": "0.1", "div": "0.08", "rate": "0.02"},
+    "S6": {"west": "908", "shade_in": "1135", "factor": "908.42", "family": "47238", "child": "4338", "mult": "0.05", "div": "0.04", "rate": "0.01"}
+  },
+
+  "flat_rates": {
+    "NOTFN_RES": "0.47", "NOTFN_FOR": "0.45", "NOABN": "0.47", "VA_MIN": "0.2",
+    "WHM": [[45000, "0.15"], [135000, "0.30"], [190000, "0.37"], [null, "0.45"]]
+  },
+
+  "extra_53_27": {
+    "W": [[875, 2575, 3], [2575, 3650, 7], [3650, null, 12]],
+    "F": [[1700, 5200, 12], [5200, 7250, 27], [7250, null, 48]]
+  },
+
+  "super": {
+    "SG_RATE": "0.12", "SG_MCB": "270830", "CC_CAP": "32500",
+    "SG_DUE_BD": 7, "SG_NEW_BD": 20, "SG_U18_HRS": 30
+  },
+
+  "payroll_tax": {
+    "_note": "06-C parameters",
+    "NSW": {"threshold": "1200000", "rate": "0.0545"},
+    "VIC": {"threshold": "1000000", "rate": "0.0485", "regional_rate": "0.012125", "phase_out_start": "3000000", "phase_out_ratio": "0.5",
+            "surcharges": [["10000000", "0.01"], ["100000000", "0.01"]]},
+    "QLD": {"threshold": "1300000", "rate1": "0.0475", "rate2": "0.0495", "tier": "6500000", "phase_out_ratio": "0.142857142857143", "regional_discount": "0.01",
+            "surcharges": [["10000000", "0.0025"], ["100000000", "0.005"]]},
+    "WA": {"threshold": "1000000", "rate": "0.055", "phase_out_ratio": "0.153846153846154"},
+    "SA": {"deduction": "600000", "rate": "0.0495", "shade_lo": "1500000", "shade_hi": "1700000"},
+    "TAS": {"threshold": "1250000", "band": "750000", "rate1": "0.04", "rate2": "0.061"},
+    "ACT": {"threshold": "1750000", "tiers": [["20000000", "0.0675"], ["50000000", "0.0685"], ["100000000", "0.0735"], ["150000000", "0.0785"], [null, "0.0875"]]},
+    "NT": {"threshold": "2500000", "rate1": "0.055", "rate2": "0.065", "rate2_from": "100000000", "phase_out_ratio": "0.25"}
+  },
+
+  "workers_comp_rates": {
+    "_note": "06-E indicative averages; replace with Lancesoft policy rates",
+    "NSW": "0.0199", "VIC": "0.018", "QLD": "0.01343", "WA": "0.01931", "SA": "0.0185", "TAS": "0.0192", "ACT": "0.0162", "NT": "0.0129"
+  },
+
+  "lsl_weeks_per_year": {
+    "_note": "06-F; CTC loading = weeks / 52",
+    "NSW": "0.86667", "VIC": "0.86667", "QLD": "0.86667", "WA": "0.86667", "SA": "1.3", "TAS": "0.86667", "ACT": "0.86667", "NT": "1.3"
+  },
+
+  "leave": {
+    "AL_ACCRUAL": "1/13", "AL_ACCRUAL_SHIFT": "5/52", "PCL_ACCRUAL": "1/26", "AL_LOADING": "0.175", "AL_WEEKS": 4
+  },
+
+  "notice_weeks": {"_note": "08-C NES s117: [service_from_years, weeks]; +1 if age > 45 and service >= 2", "bands": [[0, 1], [1, 2], [3, 3], [5, 4]]},
+  "redundancy_weeks": {"_note": "08-D NES s119", "bands": [[0, 0], [1, 4], [2, 6], [3, 7], [4, 8], [5, 10], [6, 11], [7, 13], [8, 14], [9, 16], [10, 12]]},
+
+  "termination_tax": {
+    "GR_BASE": "13598", "GR_YEAR": "6801", "ETP_CAP": "270000", "WOI_CAP": "180000", "PRES_AGE": 60,
+    "ETP_R_UNDER": "0.32", "ETP_R_OVER": "0.17", "ETP_R_EXCESS": "0.47", "LUMP_A": "0.32", "ETP_NOTFN": "0.47"
+  },
+
+  "public_holidays": ["2026-12-25", "2026-12-28", "2027-01-01", "2027-01-26", "2027-03-26", "2027-03-29", "2027-06-14"]
+}

@@ -1,0 +1,166 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>LanceSoft EOR Console</title>
+<style>
+:root{--bg:#f6f7f9;--card:#fff;--ink:#1b1f24;--mute:#5b6570;--line:#e3e6ea;--accent:#1f5fbf;--ok:#1e7f4f;--warn:#a86400;--bad:#b3261e}
+@media (prefers-color-scheme:dark){:root{--bg:#121417;--card:#1b1e22;--ink:#e8eaed;--mute:#9aa3ad;--line:#2c3036;--accent:#6ea2ff;--ok:#5cc28e;--warn:#e0a84a;--bad:#ff7a70}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.45 system-ui,-apple-system,Segoe UI,sans-serif}
+header{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid var(--line);background:var(--card)}
+h1{font-size:17px;margin:0}h2{font-size:15px;margin:0 0 10px}nav{display:flex;flex-wrap:wrap;gap:4px}
+nav button,.btn{border:1px solid var(--line);background:var(--card);color:var(--ink);padding:6px 10px;border-radius:6px;cursor:pointer;font:inherit}
+nav button.on{background:var(--accent);color:#fff;border-color:var(--accent)}.btn.primary{background:var(--accent);color:#fff;border-color:var(--accent)}
+main{padding:16px;max-width:1200px;margin:0 auto}.grid{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(170px,1fr))}
+.card{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:14px;margin-bottom:12px}
+.stat b{display:block;font-size:22px}.stat span{color:var(--mute);font-size:12px}
+.board{display:flex;gap:10px;overflow-x:auto;padding-bottom:6px}.col{min-width:150px;flex:1;background:var(--card);border:1px solid var(--line);border-radius:8px;padding:8px}
+.col h3{font-size:12px;margin:0 0 6px;color:var(--mute);text-transform:uppercase;letter-spacing:.03em}.chip{border:1px solid var(--line);border-radius:6px;padding:6px;margin-bottom:6px;font-size:12px}
+.tablewrap{overflow-x:auto}table{width:100%;border-collapse:collapse}th,td{text-align:left;padding:6px 8px;border-bottom:1px solid var(--line);white-space:nowrap}th{color:var(--mute);font-weight:600;font-size:12px}
+.pill{display:inline-block;padding:1px 7px;border-radius:10px;font-size:12px;border:1px solid var(--line)}.ok{color:var(--ok)}.warn{color:var(--warn)}.bad{color:var(--bad)}
+form{display:grid;gap:8px;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));align-items:end}label{display:grid;gap:3px;font-size:12px;color:var(--mute)}
+input,select{padding:6px 8px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--ink);font:inherit;width:100%}
+.mute{color:var(--mute)}pre{white-space:pre-wrap;background:var(--bg);padding:10px;border-radius:6px;border:1px solid var(--line);max-height:320px;overflow:auto}
+#toast{position:fixed;bottom:16px;right:16px;background:var(--ink);color:var(--bg);padding:8px 12px;border-radius:6px;display:none}
+</style>
+</head>
+<body>
+<header>
+  <h1>LanceSoft EOR / AOR Console</h1>
+  <nav id="nav"></nav>
+  <button class="btn primary" onclick="tick()">Run automation now</button>
+</header>
+<main id="view"></main>
+<div id="toast"></div>
+<script>
+const VIEWS = ["Overview","Clients","Workers","Approvals","Payroll","Invoices","Quote","Activity"];
+const AU_TYPES = [["W01","Permanent full-time"],["W02","Permanent part-time"],["W04","Fixed-term"],["W05","Apprentice / trainee"],["W06","Junior (under 18)"],["W07","Working holiday maker"],["W08","Foreign resident"],["W09","Secondee with CoC"],["W10","Director"],["W11","Labour-hire contractor (TFN)"],["W12","ABN contractor, voluntary agreement"],["W13","ABN contractor, no withholding"]];
+const WORKER_FLOW = ["requested","needs_attention","classification","contracting","contract_sent","screening","provisioning","ready","active","offboarding","terminated","withdrawn","rejected"];
+let current = "Overview";
+const key = new URLSearchParams(location.search).get("key") || "";
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const tone = s => /active|paid|closed|approved|signed|clear/.test(s) ? "ok" : /reject|withdrawn|terminated|overdue|declined/.test(s) ? "bad" : /review|attention|approval|open/.test(s) ? "warn" : "";
+const pill = s => `<span class="pill ${tone(s)}">${esc(s)}</span>`;
+async function api(path, body, method) {
+  const r = await fetch(path, {method: method || (body ? "POST" : "GET"), headers: {"Content-Type":"application/json","X-API-Key":key}, body: body ? JSON.stringify(body) : undefined});
+  const j = await r.json();
+  if (!r.ok) throw new Error(j.error || r.statusText);
+  return j;
+}
+function toast(msg){const t=$("#toast");t.textContent=msg;t.style.display="block";setTimeout(()=>t.style.display="none",2600)}
+function table(rows, cols){
+  if(!rows.length) return '<p class="mute">Nothing here yet.</p>';
+  return `<div class="tablewrap"><table><tr>${cols.map(c=>`<th>${c[0]}</th>`).join("")}</tr>${rows.map(r=>`<tr>${cols.map(c=>`<td>${c[1](r)}</td>`).join("")}</tr>`).join("")}</table></div>`;
+}
+function nav(){ $("#nav").innerHTML = VIEWS.map(v=>`<button class="${v===current?"on":""}" onclick="go('${v}')">${v}</button>`).join(""); }
+function go(v){ current=v; nav(); render(); }
+async function tick(){ const r = await api("/api/automation/tick", {}); toast(`Automation pass: ${r.transitions} step(s) advanced`); render(); }
+
+const R = {
+  async Overview(){
+    const [d, workers] = await Promise.all([api("/api/dashboard"), api("/api/workers")]);
+    const sum = o => Object.values(o).reduce((a,b)=>a+b,0);
+    const cols = WORKER_FLOW.filter(s => workers.some(w=>w.status===s) || ["requested","contract_sent","screening","ready","active"].includes(s));
+    return `<div class="grid">
+      ${[["Clients",sum(d.clients)],["Workers",sum(d.workers)],["Active workers",d.workers.active||0],["Open approvals",d.open_tasks],["Pay runs",sum(d.pay_runs)],["Notifications queued",d.queued_messages]]
+        .map(([k,v])=>`<div class="card stat"><b>${v}</b><span>${k}</span></div>`).join("")}
+    </div>
+    <div class="card"><h2>Worker production line</h2><div class="board">${cols.map(s=>`<div class="col"><h3>${s.replace("_"," ")}</h3>${
+      workers.filter(w=>w.status===s).map(w=>`<div class="chip"><b>${esc(w.full_name)}</b><br><span class="mute">${w.country} · ${w.engagement_type}</span></div>`).join("")}</div>`).join("")}</div></div>`;
+  },
+  async Clients(){
+    const rows = await api("/api/clients");
+    return `<div class="card"><h2>Onboard a client</h2><form onsubmit="return submitForm(event,'/api/clients')">
+      <label>Company name<input name="name" required></label><label>Billing contact email<input name="contact_email" type="email" required></label>
+      <label>Billing currency<input name="billing_currency" value="USD"></label><label>EOR fee / employee / month<input name="eor_fee_monthly" value="599"></label>
+      <label>AOR fee (fraction)<input name="aor_fee_pct" value="0.05"></label><button class="btn primary">Create</button></form>
+      <p class="mute">KYC, MSA e-signature and activation run automatically.</p></div>
+      <div class="card"><h2>Clients</h2>${table(rows,[["Name",r=>esc(r.name)],["Contact",r=>esc(r.contact_email)],["Status",r=>pill(r.status)],["EOR fee",r=>`${r.billing_currency} ${r.eor_fee_monthly}`],["ID",r=>`<span class="mute">${r.id}</span>`]])}</div>`;
+  },
+  async Workers(){
+    const [rows, clients, countries] = await Promise.all([api("/api/workers"), api("/api/clients?status=active"), api("/api/countries")]);
+    return `<div class="card"><h2>Hire a worker</h2><form onsubmit="return submitForm(event,'/api/workers')">
+      <label>Client<select name="client_id" required>${clients.map(c=>`<option value="${c.id}">${esc(c.name)}</option>`).join("")}</select></label>
+      <label>Full name<input name="full_name" required></label><label>Email<input name="email" type="email" required></label>
+      <label>Country<select name="country">${Object.entries(countries).map(([k,v])=>`<option value="${k}">${esc(v.name)} (${v.currency})</option>`).join("")}</select></label>
+      <label>Type<select name="engagement_type"><option>EOR</option><option>AOR</option></select></label>
+      <label>Job title<input name="job_title"></label><label>Annual salary (local)<input name="salary_annual"></label>
+      <label>Hourly rate (contractors)<input name="rate_hourly"></label><label>Start date<input name="start_date" type="date" required></label>
+      <label>End date (fixed term)<input name="end_date" type="date"></label>
+      <label>AU state of work<select name="au.state"><option value="">(not Australia)</option>${["NSW","VIC","QLD","WA","SA","TAS","ACT","NT"].map(s=>`<option>${s}</option>`).join("")}</select></label>
+      <label>AU worker type<select name="au.worker_type"><option value="">Default (W01 employee / W13 ABN contractor)</option>${AU_TYPES.map(([k,v])=>`<option value="${k}">${k} ${v}</option>`).join("")}</select></label>
+      <label>AU TFN<input name="au.tfn" placeholder="9 digits"></label><label>AU ABN (contractors)<input name="au.abn" placeholder="11 digits"></label>
+      <label>AU tax-free threshold<select name="au.tft"><option value="true">Claimed</option><option value="false">Not claimed</option></select></label>
+      <button class="btn primary">Create</button></form><p class="mute">Australian fields are used only when Country is Australia. Payroll follows GPE-AU-LOGIC v1.3 (FY2026-27).</p></div>
+      <div class="card"><h2>Workers</h2>${table(rows,[["Name",r=>esc(r.full_name)],["Country",r=>r.country],["Type",r=>r.engagement_type],["Status",r=>pill(r.status)],
+        ["Pay",r=>r.salary_annual?`${r.currency} ${r.salary_annual}/yr`:`${r.currency} ${r.rate_hourly}/h`],["Start",r=>r.start_date],
+        ["Notes",r=>esc((r.data.errors||[]).join("; ") || (r.data.classification ? `risk ${r.data.classification.level} (${r.data.classification.score})` : ""))],
+        ["",r=>["active","ready"].includes(r.status)?`<button class="btn" onclick="offboard('${r.id}')">Offboard</button>`:""]])}</div>`;
+  },
+  async Approvals(){
+    const rows = await api("/api/tasks");
+    return `<div class="card"><h2>Exceptions needing a human</h2><p class="mute">Everything else runs automatically. These only appear when a rule or threshold says a person should decide.</p>
+      ${table(rows,[["Task",r=>esc(r.title)],["Kind",r=>r.kind],["Status",r=>pill(r.status)],["Details",r=>`<span class="mute">${esc(r.data.approve?`approve = ${r.data.approve}; reject = ${r.data.reject}`:r.data.reason||"")}</span>`],
+        ["",r=>r.status==="open"?`<button class="btn" onclick="resolve('${r.id}','approve')">Approve</button> <button class="btn" onclick="resolve('${r.id}','reject')">Reject</button>`:""]])}</div>`;
+  },
+  async Payroll(){
+    const runs = await api("/api/payruns");
+    const details = await Promise.all(runs.slice(0,6).map(r=>api(`/api/payruns/${r.id}`)));
+    return details.map(r=>`<div class="card"><h2>${r.period} · ${pill(r.status)} · ${r.data.billing_currency||""} ${r.data.billing_total||""}</h2>
+      ${table(r.payslips,[["Worker",s=>esc(s.data.worker_name)],["Type",s=>s.data.engagement_type],["Gross",s=>`${s.currency} ${s.gross}`],["Net",s=>s.net],["Employer cost",s=>s.employer_cost],["Status",s=>pill(s.status)]])}</div>`).join("")
+      || '<div class="card"><p class="mute">Pay runs are created automatically on the payroll cut-off day.</p></div>';
+  },
+  async Invoices(){
+    const rows = await api("/api/invoices");
+    return `<div class="card"><h2>Client invoices</h2>${table(rows,[["Invoice",r=>r.id],["Period",r=>r.period],["Amount",r=>`${r.currency} ${r.amount}`],["Due",r=>r.due_date],["Status",r=>pill(r.status)]])}</div>`;
+  },
+  async Quote(){
+    const countries = await api("/api/countries");
+    return `<div class="card"><h2>Employer cost calculator</h2><form onsubmit="return quote(event)">
+      <label>Country<select name="country">${Object.entries(countries).map(([k,v])=>`<option value="${k}">${esc(v.name)} (${v.currency})</option>`).join("")}</select></label>
+      <label>Annual salary (local)<input name="salary_annual" value="60000" required></label>
+      <label>Type<select name="engagement_type"><option>EOR</option><option>AOR</option></select></label>
+      <label>State (Australia)<select name="state">${["NSW","VIC","QLD","WA","SA","TAS","ACT","NT"].map(s=>`<option>${s}</option>`).join("")}</select></label><button class="btn primary">Estimate</button></form><div id="quote"></div>
+      <p class="mute">Illustrative statutory rates. Validate with in-country partners before quoting customers.</p></div>`;
+  },
+  async Activity(){
+    const [ev, out] = await Promise.all([api("/api/events?limit=100"), api("/api/outbox?limit=50")]);
+    return `<div class="card"><h2>Audit trail</h2>${table(ev,[["Time",r=>r.created_at.slice(0,19).replace("T"," ")],["Entity",r=>`${r.entity_type} ${r.entity_id}`],["Event",r=>r.type],
+      ["Change",r=>r.data.to?`${esc(r.data.from)} → ${pill(r.data.to)} <span class="mute">${esc(r.data.note||"")}</span>`:esc(JSON.stringify(r.data))]])}</div>
+      <div class="card"><h2>Outgoing notifications</h2>${table(out,[["To",r=>esc(r.recipient)],["Subject",r=>esc(r.subject)],["Status",r=>pill(r.status)]])}</div>`;
+  },
+};
+async function render(){ try { $("#view").innerHTML = await R[current](); } catch(e){ $("#view").innerHTML = `<div class="card bad">${esc(e.message)}</div>`; } }
+async function submitForm(ev, path){
+  ev.preventDefault();
+  const body = {};
+  for (const [k,v] of new FormData(ev.target)) {
+    if (v === "") continue;
+    if (k.startsWith("au.")) (body.au ??= {})[k.slice(3)] = v === "true" ? true : v === "false" ? false : v;
+    else body[k] = v;
+  }
+  if (body.au && (body.country !== "AU" || !body.au.state)) delete body.au;
+  try { await api(path, body); toast("Saved. Automation picks it up on the next pass."); render(); } catch(e){ toast(e.message); }
+  return false;
+}
+async function resolve(id, decision){ try { await api(`/api/tasks/${id}/resolve`, {decision}); await tick(); } catch(e){ toast(e.message); } }
+async function offboard(id){
+  const reason = prompt("Reason for offboarding?"); if(reason===null) return;
+  try { await api(`/api/workers/${id}/offboard`, {reason, initiated_by:"employer"}); await tick(); } catch(e){ toast(e.message); }
+}
+async function quote(ev){
+  ev.preventDefault();
+  const b = Object.fromEntries(new FormData(ev.target));
+  try {
+    const q = await api("/api/quote", b);
+    $("#quote").innerHTML = `<p><b>Monthly total cost: ${q.currency} ${q.monthly_total_cost}</b> · gross ${q.monthly_gross} · net to worker ${q.monthly_net} · employer on-costs ${q.monthly_employer_cost}</p>`
+      + table(q.lines,[["Item",l=>esc(l.label)],["Type",l=>l.kind],["Amount",l=>l.amount]]);
+  } catch(e){ toast(e.message); }
+  return false;
+}
+nav(); render(); setInterval(()=>{ if(!document.querySelector("input:focus,select:focus")) render(); }, 15000);
+</script>
+</body>
+</html>
